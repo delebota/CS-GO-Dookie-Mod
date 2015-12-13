@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+    "$basetexture"	"models/dookie/dookie"
+    "$surfaceprop"	"mud"
+    "$model" 1
+    "$envmapmode" 1
+}
