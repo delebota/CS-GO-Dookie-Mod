@@ -1,4 +1,5 @@
 # CS-GO-Dookie-Mod
-Remake of the "Take A Dookie" AMX Mod in CS 1.6 to work in Sourcemod for CS:GO
+Drop a steaming hot turdburger on scrubs with this Sourcemod plugin for CS:GO.
+Remake of the "Take A Dookie" AMX plugin by PaintLancer for CS 1.6
 
-Install Instuctions will be provided on the first release.
+Install Instructions will be provided on the first release.

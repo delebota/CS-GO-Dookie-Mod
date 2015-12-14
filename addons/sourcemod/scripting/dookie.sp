@@ -8,11 +8,16 @@ public Plugin myinfo =
 	author = "Tom Delebo",
 	description = "Drop a steaming hot turdburger on scrubs!",
 	version = "1.0",
-	url = "http://www.github.com/"
+	url = "https://github.com/delebota/CS-GO-Dookie-Mod"
 };
 
-#define DOOKIE_SOUND      "dookie/dookie.wav"
-#define DOOKIE_SOUND_FULL "sound/dookie/dookie.wav"
+// Sounds
+#define DOOKIE_SOUND             "dookie/dookie.wav"
+#define DOOKIE_SOUND_FULL        "sound/dookie/dookie.wav"
+#define DOOKIE_SUPER_SOUND       "dookie/superdookie.wav"
+#define DOOKIE_SUPER_SOUND_FULL  "sound/dookie/superdookie.wav"
+
+// Models
 #define DOOKIE_MODEL      "models/dookie/dookie.mdl"
 #define DOOKIE_MODEL_DX80 "models/dookie/dookie.dx80.vtx"
 #define DOOKIE_MODEL_DX90 "models/dookie/dookie.dx90.vtx"
@@ -23,8 +28,9 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	// Register our dookie command
+	// Register our dookie commands
 	RegConsoleCmd("!dookie", Command_Dookie);
+	RegConsoleCmd("!dookie_help", Command_Dookie_Help);
 }
 
 public void OnMapStart() 
@@ -32,6 +38,7 @@ public void OnMapStart()
 	// Cache files
 	PrecacheModel(DOOKIE_MODEL, true);
 	PrecacheSound(DOOKIE_SOUND, true);
+	PrecacheSound(DOOKIE_SUPER_SOUND, true);
 	
 	// Set files for download
     AddFileToDownloadsTable(DOOKIE_MODEL);
@@ -42,13 +49,25 @@ public void OnMapStart()
     AddFileToDownloadsTable(DOOKIE_MODEL_VMT);
     AddFileToDownloadsTable(DOOKIE_MODEL_VTF);
     AddFileToDownloadsTable(DOOKIE_SOUND_FULL);
+    AddFileToDownloadsTable(DOOKIE_SUPER_SOUND_FULL);
+}
+
+public Action Command_Dookie_Help(int client, int args)
+{
+	PrintToChat(client, " ***** CS:GO Dookie Mod Help ***** ", client);
+	PrintToChat(client, "Type !dookie in the console. Bind it for easy access.", client);
+	PrintToChat(client, "Kills grant dookies, use them near dead players.", client);
+	PrintToChat(client, "Three headshots grant an earth shaking superdookie.", client);
+ 
+	return Plugin_Handled;
 }
 
 public Action Command_Dookie(int client, int args)
 {
 	// Create Dookie
-	EmitSoundToAll(DOOKIE_SOUND);
+	//EmitSoundToAll(DOOKIE_SOUND);
 	//CreateDookie(client);
+	EmitSoundToAll(DOOKIE_SUPER_SOUND);
 	CreateSuperDookie(client);
  
 	return Plugin_Handled;
@@ -120,13 +139,45 @@ public CreateSuperDookie(int client)
 		TeleportEntity(entDookieIndex, origin, NULL_VECTOR, NULL_VECTOR);
 	}
 	
+	// Add shake
+	new entShakeIndex = CreateEntityByName("env_shake");
+	if (entShakeIndex != -1 && IsValidEntity(entShakeIndex))
+	{
+		// Set shake values
+		DispatchKeyValue(entShakeIndex, "SpawnFlags", "1");
+		DispatchKeyValueFloat(entShakeIndex, "Amplitude", 8.0);
+		DispatchKeyValueFloat(entShakeIndex, "Radius", 512.0);
+		DispatchKeyValueFloat(entShakeIndex, "Duration", 2.0);
+		DispatchKeyValueFloat(entShakeIndex, "Frequency", 128.0);
+		
+		// Spawn shake
+		DispatchSpawn(entShakeIndex);
+		AcceptEntityInput(entShakeIndex, "StartShake");
+		TeleportEntity(entShakeIndex, origin, NULL_VECTOR, NULL_VECTOR);
+	}
+	
+	// Add explosion
+	new entExplosionIndex = CreateEntityByName("env_explosion");
+	if (entExplosionIndex != -1 && IsValidEntity(entExplosionIndex))
+	{
+		// Set explosion values
+		DispatchKeyValue(entExplosionIndex, "SpawnFlags", "1");
+		DispatchKeyValue(entExplosionIndex, "iMagnitude", "1000");
+		DispatchKeyValue(entExplosionIndex, "RenderMode", "0");
+		
+		// Spawn explosion
+		DispatchSpawn(entExplosionIndex);
+		TeleportEntity(entExplosionIndex, origin, NULL_VECTOR, NULL_VECTOR);
+		AcceptEntityInput(entExplosionIndex, "Explode");
+	}
+	
 	// Add steam sprite
 	new entSteamIndex = CreateEntityByName("env_steam");
 	if (entSteamIndex != -1 && IsValidEntity(entSteamIndex))
 	{
 		// Set steam sprite values
 		DispatchKeyValue(entSteamIndex, "SpawnFlags", "1");
-		DispatchKeyValue(entSteamIndex, "RenderColor", "230 230 230");
+		DispatchKeyValue(entSteamIndex, "RenderColor", "79 141 57");
 		DispatchKeyValue(entSteamIndex, "SpreadSpeed", "1.5");
 		DispatchKeyValue(entSteamIndex, "Speed", "3");
 		DispatchKeyValue(entSteamIndex, "StartSize", "1");
