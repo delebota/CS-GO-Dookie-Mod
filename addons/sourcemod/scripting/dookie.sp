@@ -107,39 +107,48 @@ public Action Command_Dookie(int client, int args)
 	// Check if the player is near the body
 	if (closestBodyDist <= 100.0)
 	{
-		// Dookie
-		EmitSoundToAll(DOOKIE_SOUND);
-		CreateDookie(client);
-		
-		// Print message
+		// Prepare message
 		new String:victimName[32];
 		GetClientName(closestBodyPlayer, victimName, sizeof(victimName));
 		new String:clientName[32];
 		GetClientName(client, clientName, sizeof(clientName));
 		new String:msg[128];
-		GetClientName(closestBodyPlayer, victimName, sizeof(nick));
-		Format(msg, sizeof(msg), "%s just took a nasty dookie on %s's dead body.", clientName, victimName);
-		PrintToChatAll(msg);
+	
+		if (playerHeadshotCount[client] >= 2)
+		{
+			// Super dookie
+			CreateSuperDookie(client, clientPos)
+			EmitSoundToAll(DOOKIE_SUPER_SOUND);
+			
+			// Decrement headshots, so they can't keep using it
+			playerHeadshotCount[client] -= 2;
+			
+			// Print message
+			Format(msg, sizeof(msg), "%s just dropped an earth-shaking dookie on %s's dead body!", clientName, victimName);
+			PrintToChatAll(msg);
+		}
+		else
+		{
+			// Normal dookie
+			CreateDookie(client, clientPos);
+			EmitSoundToAll(DOOKIE_SOUND);
+		
+			// Print message
+			Format(msg, sizeof(msg), "%s just took a nasty dookie on %s's dead body.", clientName, victimName);
+			PrintToChatAll(msg);
+		}
+		
 	}
 	else
 	{
 		PrintToChat(client, "There are no dead players near you.", client);
 	}
-	
-	
-	// Create Dookie
-	//EmitSoundToAll(DOOKIE_SUPER_SOUND);
-	//CreateSuperDookie(client);
  
 	return Plugin_Handled;
 }
 
-public CreateDookie(int client)
+public CreateDookie(int client, Float:origin[3])
 {
-	// Get player position
-	new Float:origin[3];
-	GetClientAbsOrigin(client, origin);
-
 	// Create dookie model
 	new entDookieIndex = CreateEntityByName("prop_dynamic");
 	if (entDookieIndex != -1 && IsValidEntity(entDookieIndex))
@@ -154,51 +163,13 @@ public CreateDookie(int client)
 	}
 	
 	// Add steam sprite
-	new entSteamIndex = CreateEntityByName("env_steam");
-	if (entSteamIndex != -1 && IsValidEntity(entSteamIndex))
-	{
-		// Set steam sprite values
-		DispatchKeyValue(entSteamIndex, "SpawnFlags", "1");
-		DispatchKeyValue(entSteamIndex, "RenderColor", "230 230 230");
-		DispatchKeyValue(entSteamIndex, "SpreadSpeed", "1.5");
-		DispatchKeyValue(entSteamIndex, "Speed", "3");
-		DispatchKeyValue(entSteamIndex, "StartSize", "1");
-		DispatchKeyValue(entSteamIndex, "EndSize", "2");
-		DispatchKeyValue(entSteamIndex, "Rate", "1");
-		DispatchKeyValue(entSteamIndex, "JetLength", "20");
-		DispatchKeyValue(entSteamIndex, "RenderAmt", "128");
-		DispatchKeyValue(entSteamIndex, "InitialState", "1");
-		
-		// Spawn steam sprite
-		origin[2] += 11.0;
-		new Float:angles[3];
-		angles[0] = -90.0;
-		angles[1] = 0.0;
-		angles[2] = 0.0;
-		DispatchSpawn(entSteamIndex);
-		AcceptEntityInput(entSteamIndex, "TurnOn");
-		TeleportEntity(entSteamIndex, origin, angles, NULL_VECTOR);
-	}
+	CreateSteamSprite(origin);
 }
 
-public CreateSuperDookie(int client)
+public CreateSuperDookie(int client, Float:origin[3])
 {
-	// Get player position
-	new Float:origin[3];
-	GetClientAbsOrigin(client, origin);
-
-	// Create dookie model
-	new entDookieIndex = CreateEntityByName("prop_dynamic");
-	if (entDookieIndex != -1 && IsValidEntity(entDookieIndex))
-	{
-		// Set dookie model values
-		DispatchKeyValue(entDookieIndex, "model", DOOKIE_MODEL);
-		DispatchKeyValueFloat(entDookieIndex, "solid", 4.0);
-		
-		// Spawn dookie model
-		DispatchSpawn(entDookieIndex);
-		TeleportEntity(entDookieIndex, origin, NULL_VECTOR, NULL_VECTOR);
-	}
+	// Create dookie model and steam
+	CreateDookie(client, origin);
 	
 	// Add shake
 	new entShakeIndex = CreateEntityByName("env_shake");
@@ -231,7 +202,10 @@ public CreateSuperDookie(int client)
 		TeleportEntity(entExplosionIndex, origin, NULL_VECTOR, NULL_VECTOR);
 		AcceptEntityInput(entExplosionIndex, "Explode");
 	}
-	
+}
+
+public CreateSteamSprite(Float:origin[3])
+{
 	// Add steam sprite
 	new entSteamIndex = CreateEntityByName("env_steam");
 	if (entSteamIndex != -1 && IsValidEntity(entSteamIndex))
@@ -250,10 +224,7 @@ public CreateSuperDookie(int client)
 		
 		// Spawn steam sprite
 		origin[2] += 11.0;
-		new Float:angles[3];
-		angles[0] = -90.0;
-		angles[1] = 0.0;
-		angles[2] = 0.0;
+		new Float:angles[3] = {-90.0, 0.0, 0.0};
 		DispatchSpawn(entSteamIndex);
 		AcceptEntityInput(entSteamIndex, "TurnOn");
 		TeleportEntity(entSteamIndex, origin, angles, NULL_VECTOR);

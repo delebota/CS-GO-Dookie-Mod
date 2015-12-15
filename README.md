@@ -10,4 +10,4 @@ Install Instructions will be provided on the first release.
 ## Usage Instructions
 Type !dookie in the console while near a player's body. 
 
-Bind the command for easy access, for example, bind t "!dookie"
+Bind the command for easy access. For example, type **bind t "!dookie"** in the console or add it to your autoexec.cfg
