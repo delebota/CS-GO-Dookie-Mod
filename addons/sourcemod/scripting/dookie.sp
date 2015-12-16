@@ -27,18 +27,29 @@ public Plugin myinfo =
 
 // Dookie Mod stats
 new Float:playerBodyOrigins[MAXPLAYERS][3];
-new playerDookies[MAXPLAYERS];
+new playerDookiesTaken[MAXPLAYERS];
+new playerDookiesAvailable[MAXPLAYERS];
 new playerHeadshotCount[MAXPLAYERS];
+
+// ConVars
+ConVar cv_dookie_limit_round;
+ConVar cv_dookie_super_hs;
 
 public void OnPluginStart()
 {
 	// Register our dookie commands
 	RegConsoleCmd("!dookie", Command_Dookie);
 	RegConsoleCmd("!dookie_help", Command_Dookie_Help);
+	RegConsoleCmd("sm_dlr", Command_Change_cv_dookie_limit_round);
+	RegConsoleCmd("sm_dshs", Command_Change_cv_dookie_super_hs);
 	
 	// Hook events
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Pre);
 	HookEvent("round_start", Event_RoundStart, EventHookMode_Pre);
+	
+	// CVars
+	cv_dookie_limit_round = CreateConVar("cv_dookie_limit_round", "5", "Max number of dookies a player can take per round.");
+	cv_dookie_super_hs = CreateConVar("cv_dookie_super_hs", "3", "Number of headshots in one round to get a 'super dookie'.");
 }
 
 public void OnMapStart() 
@@ -62,10 +73,17 @@ public void OnMapStart()
 
 public Action Command_Dookie_Help(int client, int args)
 {
+	// Send to console
+	PrintToConsole(client, " ***** CS:GO Dookie Mod Help ***** ", client);
+	PrintToConsole(client, "Type !dookie in the console. Bind it for easy access.", client);
+	PrintToConsole(client, "Kills grant dookies, use them near dead players.", client);
+	PrintToConsole(client, "By default three headshots grants an earth shaking superdookie.", client);
+
+	// Send to their chatbox as well
 	PrintToChat(client, " ***** CS:GO Dookie Mod Help ***** ", client);
 	PrintToChat(client, "Type !dookie in the console. Bind it for easy access.", client);
 	PrintToChat(client, "Kills grant dookies, use them near dead players.", client);
-	PrintToChat(client, "Three headshots grants an earth shaking superdookie.", client);
+	PrintToChat(client, "By default three headshots grants an earth shaking superdookie.", client);
  
 	return Plugin_Handled;
 }
@@ -79,71 +97,105 @@ public Action Command_Dookie(int client, int args)
 		return Plugin_Handled;
 	}
 	
-	// Player position
-    new Float:clientPos[3];
-	GetClientAbsOrigin(client, clientPos);
+	// Check if we are allowed another this round and if we have one available
+	if ((playerDookiesTaken[client] < cv_dookie_limit_round.IntValue) && (playerDookiesAvailable[client] > 0))
+	{
+		// Player position
+		new Float:clientPos[3];
+		GetClientAbsOrigin(client, clientPos);
 
-	// Track closest body
-	new closestBodyPlayer;
-	new Float:closestBodyDist = 9999.0;
-	
-	// Find nearest player body
-	for (new i = 1; i <= MaxClients; i++) 
-	{
-		// Check they are in-game, real, and dead
-        // TODO if (IsClientInGame(i) && !IsFakeClient(i) && !IsPlayerAlive(i)) 
-        if (IsClientInGame(i) && !IsPlayerAlive(i)) 
+		// Track closest body
+		new closestBodyPlayer;
+		new Float:closestBodyDist = 9999.0;
+		
+		// Find nearest player body
+		for (new i = 1; i <= MaxClients; i++) 
 		{
-			// Check if it is closer to the player
-			new Float:bodyDist = GetVectorDistance(clientPos, playerBodyOrigins[i]);
-			if (bodyDist < closestBodyDist)
+			// Check if they are in-game and dead
+			if (IsClientInGame(i) && !IsPlayerAlive(i)) 
 			{
-				closestBodyDist = bodyDist;
-				closestBodyPlayer = i;
+				// Check if this is the closest to the player yet
+				new Float:bodyDist = GetVectorDistance(clientPos, playerBodyOrigins[i]);
+				if (bodyDist < closestBodyDist)
+				{
+					closestBodyDist = bodyDist;
+					closestBodyPlayer = i;
+				}
 			}
-        }
-    }
-	
-	// Check if the player is near the body
-	if (closestBodyDist <= 100.0)
-	{
-		// Prepare message
-		new String:victimName[32];
-		GetClientName(closestBodyPlayer, victimName, sizeof(victimName));
-		new String:clientName[32];
-		GetClientName(client, clientName, sizeof(clientName));
-		new String:msg[128];
-	
-		if (playerHeadshotCount[client] >= 2)
+		}
+		
+		// Check if the player is near the body
+		if (closestBodyDist <= 100.0)
 		{
-			// Super dookie
-			CreateSuperDookie(client, clientPos)
-			EmitSoundToAll(DOOKIE_SUPER_SOUND);
+			// Prepare message
+			new String:victimName[32];
+			GetClientName(closestBodyPlayer, victimName, sizeof(victimName));
+			new String:clientName[32];
+			GetClientName(client, clientName, sizeof(clientName));
+			new String:msg[128];
+		
+			if (playerHeadshotCount[client] >= cv_dookie_super_hs.IntValue)
+			{
+				// Super dookie
+				CreateSuperDookie(client, clientPos)
+				EmitSoundToAll(DOOKIE_SUPER_SOUND);
+				
+				// Decrement headshots, so they can't keep using it
+				playerHeadshotCount[client] -= cv_dookie_super_hs.IntValue;
+				
+				// Print message
+				Format(msg, sizeof(msg), "%s just dropped an earth-shaking dookie on %s's dead body!", clientName, victimName);
+				PrintToChatAll(msg);
+			}
+			else
+			{
+				// Normal dookie
+				CreateDookie(client, clientPos);
+				EmitSoundToAll(DOOKIE_SOUND);
 			
-			// Decrement headshots, so they can't keep using it
-			playerHeadshotCount[client] -= 2;
+				// Print message
+				Format(msg, sizeof(msg), "%s just took a nasty dookie on %s's dead body.", clientName, victimName);
+				PrintToChatAll(msg);
+			}
 			
-			// Print message
-			Format(msg, sizeof(msg), "%s just dropped an earth-shaking dookie on %s's dead body!", clientName, victimName);
-			PrintToChatAll(msg);
+			// Change dookie counts
+			playerDookiesTaken[client]++;
+			playerDookiesAvailable[client]--;
 		}
 		else
 		{
-			// Normal dookie
-			CreateDookie(client, clientPos);
-			EmitSoundToAll(DOOKIE_SOUND);
-		
-			// Print message
-			Format(msg, sizeof(msg), "%s just took a nasty dookie on %s's dead body.", clientName, victimName);
-			PrintToChatAll(msg);
+			PrintToChat(client, "There are no dead players near you.", client);
 		}
-		
 	}
 	else
 	{
-		PrintToChat(client, "There are no dead players near you.", client);
+		// Display an appropriate message
+		if (playerDookiesTaken[client] >= cv_dookie_limit_round.IntValue)
+		{
+			PrintToChat(client, "You can't take another dookie this round.", client);
+		}
+		else if (playerDookiesAvailable[client] < 1)
+		{
+			PrintToChat(client, "You can't take a dookie right now, get another kill first.", client);
+		}
 	}
  
+	return Plugin_Handled;
+}
+
+public Action Command_Change_cv_dookie_limit_round(int client, int args)
+{
+	new String:arg[128];
+	GetCmdArg(1, arg, sizeof(arg));
+	cv_dookie_limit_round.SetInt(StringToInt(arg), false, false);
+	return Plugin_Handled;
+}
+
+public Action Command_Change_cv_dookie_super_hs(int client, int args)
+{
+	new String:arg[128];
+	GetCmdArg(1, arg, sizeof(arg));
+	cv_dookie_super_hs.SetInt(StringToInt(arg), false, false);
 	return Plugin_Handled;
 }
 
@@ -238,6 +290,11 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int victim = GetClientOfUserId(victimId);
 	GetClientAbsOrigin(victim, playerBodyOrigins[victim]);
 	
+	// Grant killer a dookie
+	int attackerId = event.GetInt("attacker");
+	int attacker = GetClientOfUserId(attackerId);
+	playerDookiesAvailable[attacker]++;
+	
 	// Check if it was a headshot (super dookies come from headshots)
 	bool headshot = event.GetBool("headshot");
 	if (headshot)
@@ -255,8 +312,7 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 	// Clear Dookie Mod stats
 	for (new i = 1; i <= MaxClients; i++) 
 	{
-		// Check they are in-game and real
-        // TODO if (IsClientInGame(i) && !IsFakeClient(i)) 
+		// Check they are in-game
         if (IsClientInGame(i)) 
 		{
 			// Body position
@@ -265,7 +321,8 @@ public Action Event_RoundStart(Event event, const char[] name, bool dontBroadcas
 			playerBodyOrigins[i][2] = 0.0;
 			
 			// Dookies
-			playerDookies[i] = 0;
+			playerDookiesTaken[i] = 0;
+			playerDookiesAvailable[i] = 0;
 			
 			// Headshots
 			playerHeadshotCount[i] = 0;
