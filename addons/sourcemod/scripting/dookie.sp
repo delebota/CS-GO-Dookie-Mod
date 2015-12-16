@@ -40,8 +40,8 @@ public void OnPluginStart()
 	// Register our dookie commands
 	RegConsoleCmd("!dookie", Command_Dookie);
 	RegConsoleCmd("!dookie_help", Command_Dookie_Help);
-	RegConsoleCmd("sm_dlr", Command_Change_cv_dookie_limit_round);
-	RegConsoleCmd("sm_dshs", Command_Change_cv_dookie_super_hs);
+	RegAdminCmd("sm_dlr", Command_Change_cv_dookie_limit_round, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_dshs", Command_Change_cv_dookie_super_hs, ADMFLAG_GENERIC);
 	
 	// Hook events
 	HookEvent("player_death", Event_PlayerDeath, EventHookMode_Pre);
