@@ -14,6 +14,7 @@ Remake of the "Take A Dookie" AMX plugin by PaintLancer for CS 1.6
 ## CVars
 #####These can be changed via the console by an Admin.
 - sm\_dlr - Max number of dookies a player can take per round. - Default Value is 5.
+- sm\_dsk - Knife kills grant a "super dookie". - Default Value is 1. 1 means enabled, 0 means disabled.
 - sm\_dshs - Number of headshots in one round to get a "super dookie". - Default Value is 3.
 
 ## Usage Instructions

@@ -33,6 +33,7 @@ new playerHeadshotCount[MAXPLAYERS];
 
 // ConVars
 ConVar cv_dookie_limit_round;
+ConVar cv_dookie_super_knife;
 ConVar cv_dookie_super_hs;
 
 public void OnPluginStart()
@@ -41,6 +42,7 @@ public void OnPluginStart()
 	RegConsoleCmd("!dookie", Command_Dookie);
 	RegConsoleCmd("!dookie_help", Command_Dookie_Help);
 	RegAdminCmd("sm_dlr", Command_Change_cv_dookie_limit_round, ADMFLAG_GENERIC);
+	RegAdminCmd("sm_dsk", Command_Change_cv_dookie_super_knife, ADMFLAG_GENERIC);
 	RegAdminCmd("sm_dshs", Command_Change_cv_dookie_super_hs, ADMFLAG_GENERIC);
 	
 	// Hook events
@@ -48,8 +50,9 @@ public void OnPluginStart()
 	HookEvent("round_start", Event_RoundStart, EventHookMode_Pre);
 	
 	// CVars
-	cv_dookie_limit_round = CreateConVar("cv_dookie_limit_round", "5", "Max number of dookies a player can take per round.");
-	cv_dookie_super_hs = CreateConVar("cv_dookie_super_hs", "3", "Number of headshots in one round to get a 'super dookie'.");
+	cv_dookie_limit_round = CreateConVar("cv_dookie_limit_round", "5", "Max number of dookies a player can take per round.", FCVAR_PLUGIN, true, 0.0, false, 0.0);
+	cv_dookie_super_knife = CreateConVar("cv_dookie_super_knife", "1", "Knife kills grant a 'super dookie'.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	cv_dookie_super_hs = CreateConVar("cv_dookie_super_hs", "3", "Number of headshots in one round to get a 'super dookie'.", FCVAR_PLUGIN, true, 0.0, false, 0.0);
 }
 
 public void OnMapStart() 
@@ -191,6 +194,14 @@ public Action Command_Change_cv_dookie_limit_round(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action Command_Change_cv_dookie_super_knife(int client, int args)
+{
+	new String:arg[128];
+	GetCmdArg(1, arg, sizeof(arg));
+	cv_dookie_super_knife.SetInt(StringToInt(arg), false, false);
+	return Plugin_Handled;
+}
+
 public Action Command_Change_cv_dookie_super_hs(int client, int args)
 {
 	new String:arg[128];
@@ -295,12 +306,16 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int attacker = GetClientOfUserId(attackerId);
 	playerDookiesAvailable[attacker]++;
 	
-	// Check if it was a headshot (super dookies come from headshots)
+	// Check if we need to credit for a super dookie
+	new String:weapon[64];
+	event.GetString("weapon", weapon, sizeof(weapon));
 	bool headshot = event.GetBool("headshot");
-	if (headshot)
+	if ((cv_dookie_super_knife.IntValue == 1) && StrContains(weapon, "knife"))
 	{
-		int attackerId = event.GetInt("attacker");
-		int attacker = GetClientOfUserId(attackerId);
+		playerHeadshotCount[attacker] += cv_dookie_super_hs.IntValue;
+	}
+	else if (headshot)
+	{
 		playerHeadshotCount[attacker]++;
 	}
 	
