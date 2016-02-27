@@ -191,6 +191,10 @@ public Action Command_Change_cv_dookie_limit_round(int client, int args)
 	new String:arg[128];
 	GetCmdArg(1, arg, sizeof(arg));
 	cv_dookie_limit_round.SetInt(StringToInt(arg), false, false);
+	new String:msg[128];
+	Format(msg, sizeof(msg), "Max number of dookies per round set to: %s.", arg);
+	PrintToConsole(client, msg, client);
+	PrintToChat(client, msg, client);
 	return Plugin_Handled;
 }
 
@@ -199,6 +203,13 @@ public Action Command_Change_cv_dookie_super_knife(int client, int args)
 	new String:arg[128];
 	GetCmdArg(1, arg, sizeof(arg));
 	cv_dookie_super_knife.SetInt(StringToInt(arg), false, false);
+	if (StrEqual(arg, "1")) {
+		PrintToChat(client, "Knife kills grant super dookie enabled.", client);
+		PrintToConsole(client, "Knife kills grant super dookie enabled.", client);
+	} else {
+		PrintToChat(client, "Knife kills grant super dookie disabled.", client);
+		PrintToConsole(client, "Knife kills grant super dookie disabled.", client);
+	}
 	return Plugin_Handled;
 }
 
@@ -207,6 +218,10 @@ public Action Command_Change_cv_dookie_super_hs(int client, int args)
 	new String:arg[128];
 	GetCmdArg(1, arg, sizeof(arg));
 	cv_dookie_super_hs.SetInt(StringToInt(arg), false, false);
+	new String:msg[128];
+	Format(msg, sizeof(msg), "Headshots to grant a super dookie set to: %s.", arg);
+	PrintToConsole(client, msg, client);
+	PrintToChat(client, msg, client);
 	return Plugin_Handled;
 }
 
@@ -306,13 +321,32 @@ public Action Event_PlayerDeath(Event event, const char[] name, bool dontBroadca
 	int attacker = GetClientOfUserId(attackerId);
 	playerDookiesAvailable[attacker]++;
 	
-	// Check if we need to credit for a super dookie
+	// Check for HS or knife kill
 	new String:weapon[64];
 	event.GetString("weapon", weapon, sizeof(weapon));
 	bool headshot = event.GetBool("headshot");
-	if ((cv_dookie_super_knife.IntValue == 1) && StrContains(weapon, "knife"))
+	bool knifeKill = (StrContains(weapon, "knife") != -1);
+	if ((cv_dookie_super_knife.IntValue == 1) && knifeKill)
 	{
-		playerHeadshotCount[attacker] += cv_dookie_super_hs.IntValue;
+		// Super dookie
+		new Float:attackerPos[3];
+		GetClientAbsOrigin(attacker, attackerPos);
+		CreateSuperDookie(attacker, attackerPos)
+		EmitSoundToAll(DOOKIE_SUPER_SOUND);
+		
+		// Remove a dookie since we are using it right away
+		playerDookiesAvailable[attacker]++;
+		
+		// Prepare message
+		new String:victimName[32];
+		GetClientName(victim, victimName, sizeof(victimName));
+		new String:attackerName[32];
+		GetClientName(attacker, attackerName, sizeof(attackerName));
+		new String:msg[128];
+		Format(msg, sizeof(msg), "%s just dropped an earth-shaking dookie on %s's dead body!", attackerName, victimName);
+			
+		// Print message
+		PrintToChatAll(msg);
 	}
 	else if (headshot)
 	{
