@@ -7,9 +7,10 @@ Remake of the "Take A Dookie" AMX plugin by PaintLancer for CS 1.6
 1. Create a dedicated server if you haven't already. [Instructions here.](https://developer.valvesoftware.com/wiki/Counter-Strike:_Global_Offensive_Dedicated_Servers)
 2. Install SourceMod. [Instructions here.](https://wiki.alliedmods.net/Installing_SourceMod)
 3. Download the latest CS:GO Dookie Mod release. [Releases here.](https://github.com/delebota/CS-GO-Dookie-Mod/releases)
-4. Extract release into your dedicated server's root folder. (For Example: ...\steamapps\common\CSGO - Dedicated Server\csgo)
-5. Overwrite-All if prompted.
-6. Restart server.
+4. Extract to desktop and open the CS-GO-Dookie-Mod-X.X folder.
+5. Copy all the files and folder into your dedicated server's root folder. (For Example: ...\steamapps\common\CSGO - Dedicated Server\csgo)
+6. Overwrite-All if prompted.
+7. Restart server.
 
 ## CVars
 #####These can be changed via the console by an Admin.
